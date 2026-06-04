@@ -1,0 +1,29 @@
+{
+  "folders": [
+    { "name": "pk1 root", "path": "." },
+    { "name": "frontend", "path": "packages/frontend" },
+    { "name": "backend", "path": "packages/backend" },
+    { "name": "agent", "path": "packages/agent" },
+    { "name": "migrations", "path": "supabase" }
+  ],
+  "settings": {
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "terminal.integrated.env.osx": {
+      "FORCE_COLOR": "1"
+    }
+  },
+  "launch": {
+    "configurations": [
+      {
+        "name": "Backend (dev)",
+        "type": "node",
+        "request": "launch",
+        "runtimeExecutable": "npm",
+        "runtimeArgs": ["run", "dev:backend"],
+        "cwd": "${workspaceFolder:pk1 root}"
+      }
+    ]
+  }
+}

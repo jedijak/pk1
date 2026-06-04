@@ -7,8 +7,12 @@
     "packages/agent"
   ],
   "scripts": {
+    "dev": "concurrently --names 'BE,FE,AGENT' --prefix-colors 'blue,green,yellow' \"npm -w packages/backend run dev\" \"npm -w packages/frontend run dev\" \"npm -w packages/agent run dev\"",
     "dev:frontend": "npm -w packages/frontend run dev",
     "dev:backend": "npm -w packages/backend run dev",
     "dev:agent": "npm -w packages/agent run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
   }
 }
