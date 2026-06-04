@@ -1,0 +1,14 @@
+{
+  "name": "pk1",
+  "private": true,
+  "workspaces": [
+    "packages/frontend",
+    "packages/backend",
+    "packages/agent"
+  ],
+  "scripts": {
+    "dev:frontend": "npm -w packages/frontend run dev",
+    "dev:backend": "npm -w packages/backend run dev",
+    "dev:agent": "npm -w packages/agent run dev"
+  }
+}
