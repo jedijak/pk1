@@ -8,7 +8,7 @@
 - **Stack:** React + TypeScript (Vite, dnd-kit, Zustand) → Cloudflare Pages | Hono on Cloudflare Workers (REST API + Agent workers) | Supabase Postgres + Auth + Realtime | Claude API (Haiku for routine scans, Sonnet for deep analysis) | Cloudflare Cron Triggers, Queues, Durable Objects | GitHub Actions CI/CD.
 
 ## 2. Folder Structure
-Monorepo at `github.com/jedijak/pk1` (npm workspaces). Local path: `/Users/jakplihal/workspaces/business/Kanban`.
+Monorepo at `github.com/jedijak/pk1` (npm workspaces). Local path: `/Users/jakplihal/workspaces/pk1`.
 
 | Path | What lives here | When to reference |
 |---|---|---|
