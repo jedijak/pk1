@@ -5,26 +5,25 @@
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS view_configurations (
-  id                 uuid             PRIMARY KEY DEFAULT gen_random_uuid(),
+  id           uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id   uuid        REFERENCES projects(id) ON DELETE CASCADE NOT NULL,
+  user_id      uuid        REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name         text        NOT NULL,
 
-  -- NULL project_id means global / cross-project view
-  project_id         uuid             REFERENCES projects(id) ON DELETE CASCADE,
+  -- flexible filter rules: arbitrary JSON object
+  filters      jsonb,
 
-  name               text             NOT NULL,
-  description        text,
+  -- how cards are grouped in this view (free-form string, e.g. 'status', 'assignee')
+  grouping     text,
 
-  -- how cards are grouped in this view
-  grouping_principle view_grouping    NOT NULL DEFAULT 'project',
+  -- sort rules: arbitrary JSON object
+  sort_order   jsonb,
 
-  -- flexible filter/sort rules: {filters: [...], sort: [...], columns: [...]}
-  filter_logic       jsonb            DEFAULT '{}',
+  -- whether this is the user's default view for the project
+  is_default   boolean     NOT NULL DEFAULT false,
 
-  -- who can see this view
-  visibility         view_visibility  NOT NULL DEFAULT 'personal',
-
-  created_by         uuid             REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  created_at         timestamptz      DEFAULT now(),
-  updated_at         timestamptz      DEFAULT now()
+  created_at   timestamptz DEFAULT now(),
+  updated_at   timestamptz DEFAULT now()
 );
 
 -- Trigger: auto-update updated_at

@@ -10,11 +10,11 @@ CREATE INDEX IF NOT EXISTS idx_cards_project_id
 CREATE INDEX IF NOT EXISTS idx_cards_assignee_id
   ON cards(assignee_id);
 
-CREATE INDEX IF NOT EXISTS idx_cards_status
-  ON cards(status);
+CREATE INDEX IF NOT EXISTS idx_cards_card_status
+  ON cards(card_status);
 
-CREATE INDEX IF NOT EXISTS idx_cards_priority
-  ON cards(priority);
+CREATE INDEX IF NOT EXISTS idx_cards_card_priority
+  ON cards(card_priority);
 
 -- Partial index: only rows with an actual due date (avoids indexing NULLs)
 CREATE INDEX IF NOT EXISTS idx_cards_due_date
@@ -22,18 +22,26 @@ CREATE INDEX IF NOT EXISTS idx_cards_due_date
   WHERE due_date IS NOT NULL;
 
 -- Composite index: most common board query — all cards in a project by column
-CREATE INDEX IF NOT EXISTS idx_cards_project_status
-  ON cards(project_id, status);
+CREATE INDEX IF NOT EXISTS idx_cards_project_card_status
+  ON cards(project_id, card_status);
 
--- Partial index: agent dashboard — only flagged cards
-CREATE INDEX IF NOT EXISTS idx_cards_agent_flagged
-  ON cards(agent_flagged)
-  WHERE agent_flagged = true;
+-- agent_scans: look up scans by project
+CREATE INDEX IF NOT EXISTS idx_agent_scans_project_id
+  ON agent_scans(project_id);
+
+-- Partial index: queued/running scans (hot path for background worker polling)
+CREATE INDEX IF NOT EXISTS idx_agent_scans_status_active
+  ON agent_scans(status)
+  WHERE status IN ('queued', 'running');
 
 -- recommendations: pending queue (agent dashboard hot path)
-CREATE INDEX IF NOT EXISTS idx_recommendations_status
-  ON recommendations(status)
-  WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_recommendations_recommendation_status
+  ON recommendations(recommendation_status)
+  WHERE recommendation_status = 'pending';
+
+-- recommendations: all recommendations for a given project
+CREATE INDEX IF NOT EXISTS idx_recommendations_project_id
+  ON recommendations(project_id);
 
 -- recommendations: all recommendations for a given card
 CREATE INDEX IF NOT EXISTS idx_recommendations_card_id

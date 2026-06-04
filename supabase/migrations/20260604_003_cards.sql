@@ -5,41 +5,32 @@
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS cards (
-  id               uuid         PRIMARY KEY DEFAULT gen_random_uuid(),
-  project_id       uuid         REFERENCES projects(id) ON DELETE CASCADE NOT NULL,
-  title            text         NOT NULL,
+  id               uuid          PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id       uuid          REFERENCES projects(id) ON DELETE CASCADE NOT NULL,
+  title            text          NOT NULL,
   description      text,
 
-  -- card classification
-  type             card_type    NOT NULL DEFAULT 'human_touchpoint',
-  background_color card_bg_color NOT NULL DEFAULT 'dark_tan',
-  status           card_status  NOT NULL DEFAULT 'backlog',
-  priority         card_priority NOT NULL DEFAULT 'medium',
+  -- card classification (prefixed column names to match backend types)
+  card_type        card_type     NOT NULL DEFAULT 'human_touchpoint',
+  card_status      card_status   NOT NULL DEFAULT 'backlog',
+  card_priority    card_priority NOT NULL DEFAULT 'medium',
+  card_bg_color    card_bg_color,
 
   -- ownership / scheduling
-  assignee_id      uuid         REFERENCES auth.users(id) ON DELETE SET NULL,
+  assignee_id      uuid          REFERENCES auth.users(id) ON DELETE SET NULL,
   due_date         timestamptz,
 
   -- display order within its column/view (lower = higher)
-  position         integer      NOT NULL DEFAULT 0,
-
-  -- embedded sub-items: array of {id, type: nested_item_type, content, checked?, ...}
-  nested_items     jsonb        DEFAULT '[]',
+  position         integer       NOT NULL DEFAULT 0,
 
   -- free-form labels
-  tags             text[]       DEFAULT '{}',
+  tags             text[],
 
-  -- external links / attachments: [{label, url, resource_type}]
-  linked_resources jsonb        DEFAULT '[]',
+  -- arbitrary agent/integration metadata
+  metadata         jsonb,
 
-  -- AA agent marked this card for attention
-  agent_flagged    boolean      DEFAULT false,
-
-  -- soft-delete / archiving
-  archived_at      timestamptz,
-
-  created_at       timestamptz  DEFAULT now(),
-  updated_at       timestamptz  DEFAULT now()
+  created_at       timestamptz   DEFAULT now(),
+  updated_at       timestamptz   DEFAULT now()
 );
 
 -- Trigger: auto-update updated_at

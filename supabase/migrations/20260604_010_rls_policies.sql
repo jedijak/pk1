@@ -9,44 +9,37 @@
 -- =============================================================================
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 
--- SELECT: owner or a listed member
+-- SELECT: own projects only
 DROP POLICY IF EXISTS "projects_select" ON projects;
 CREATE POLICY "projects_select" ON projects
-  FOR SELECT USING (
-    owner_id = auth.uid()
-    OR auth.uid() = ANY(member_ids)
-  );
+  FOR SELECT USING (user_id = auth.uid());
 
 -- INSERT: authenticated user sets themselves as owner
 DROP POLICY IF EXISTS "projects_insert" ON projects;
 CREATE POLICY "projects_insert" ON projects
-  FOR INSERT WITH CHECK (owner_id = auth.uid());
+  FOR INSERT WITH CHECK (user_id = auth.uid());
 
 -- UPDATE: only owner
 DROP POLICY IF EXISTS "projects_update" ON projects;
 CREATE POLICY "projects_update" ON projects
-  FOR UPDATE USING (owner_id = auth.uid());
+  FOR UPDATE USING (user_id = auth.uid());
 
 -- DELETE: only owner
 DROP POLICY IF EXISTS "projects_delete" ON projects;
 CREATE POLICY "projects_delete" ON projects
-  FOR DELETE USING (owner_id = auth.uid());
+  FOR DELETE USING (user_id = auth.uid());
 
 -- =============================================================================
 -- CARDS
 -- =============================================================================
 ALTER TABLE cards ENABLE ROW LEVEL SECURITY;
 
--- Reusable subquery: is the current user a member or owner of the card's project?
--- Inlined in each policy for clarity and RLS compatibility.
-
 DROP POLICY IF EXISTS "cards_select" ON cards;
 CREATE POLICY "cards_select" ON cards
   FOR SELECT USING (
     project_id IN (
       SELECT id FROM projects
-      WHERE owner_id = auth.uid()
-        OR auth.uid() = ANY(member_ids)
+      WHERE user_id = auth.uid()
     )
   );
 
@@ -55,8 +48,7 @@ CREATE POLICY "cards_insert" ON cards
   FOR INSERT WITH CHECK (
     project_id IN (
       SELECT id FROM projects
-      WHERE owner_id = auth.uid()
-        OR auth.uid() = ANY(member_ids)
+      WHERE user_id = auth.uid()
     )
   );
 
@@ -65,8 +57,7 @@ CREATE POLICY "cards_update" ON cards
   FOR UPDATE USING (
     project_id IN (
       SELECT id FROM projects
-      WHERE owner_id = auth.uid()
-        OR auth.uid() = ANY(member_ids)
+      WHERE user_id = auth.uid()
     )
   );
 
@@ -75,8 +66,7 @@ CREATE POLICY "cards_delete" ON cards
   FOR DELETE USING (
     project_id IN (
       SELECT id FROM projects
-      WHERE owner_id = auth.uid()
-        OR auth.uid() = ANY(member_ids)
+      WHERE user_id = auth.uid()
     )
   );
 
@@ -85,25 +75,22 @@ CREATE POLICY "cards_delete" ON cards
 -- =============================================================================
 ALTER TABLE view_configurations ENABLE ROW LEVEL SECURITY;
 
--- SELECT: own views, or any team/public view
+-- SELECT: own views only
 DROP POLICY IF EXISTS "view_configurations_select" ON view_configurations;
 CREATE POLICY "view_configurations_select" ON view_configurations
-  FOR SELECT USING (
-    created_by = auth.uid()
-    OR visibility IN ('team', 'public')
-  );
+  FOR SELECT USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "view_configurations_insert" ON view_configurations;
 CREATE POLICY "view_configurations_insert" ON view_configurations
-  FOR INSERT WITH CHECK (created_by = auth.uid());
+  FOR INSERT WITH CHECK (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "view_configurations_update" ON view_configurations;
 CREATE POLICY "view_configurations_update" ON view_configurations
-  FOR UPDATE USING (created_by = auth.uid());
+  FOR UPDATE USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "view_configurations_delete" ON view_configurations;
 CREATE POLICY "view_configurations_delete" ON view_configurations
-  FOR DELETE USING (created_by = auth.uid());
+  FOR DELETE USING (user_id = auth.uid());
 
 -- =============================================================================
 -- BOARD STATE
@@ -131,43 +118,28 @@ CREATE POLICY "board_state_delete" ON board_state
 -- =============================================================================
 ALTER TABLE recommendations ENABLE ROW LEVEL SECURITY;
 
--- Access flows: recommendation → card → project → membership check
+-- Access via direct project_id FK (efficient — no join required)
 DROP POLICY IF EXISTS "recommendations_select" ON recommendations;
 CREATE POLICY "recommendations_select" ON recommendations
   FOR SELECT USING (
-    card_id IN (
-      SELECT c.id FROM cards c
-      WHERE c.project_id IN (
-        SELECT p.id FROM projects p
-        WHERE p.owner_id = auth.uid()
-          OR auth.uid() = ANY(p.member_ids)
-      )
+    project_id IN (
+      SELECT id FROM projects WHERE user_id = auth.uid()
     )
   );
 
 DROP POLICY IF EXISTS "recommendations_insert" ON recommendations;
 CREATE POLICY "recommendations_insert" ON recommendations
   FOR INSERT WITH CHECK (
-    card_id IN (
-      SELECT c.id FROM cards c
-      WHERE c.project_id IN (
-        SELECT p.id FROM projects p
-        WHERE p.owner_id = auth.uid()
-          OR auth.uid() = ANY(p.member_ids)
-      )
+    project_id IN (
+      SELECT id FROM projects WHERE user_id = auth.uid()
     )
   );
 
 DROP POLICY IF EXISTS "recommendations_update" ON recommendations;
 CREATE POLICY "recommendations_update" ON recommendations
   FOR UPDATE USING (
-    card_id IN (
-      SELECT c.id FROM cards c
-      WHERE c.project_id IN (
-        SELECT p.id FROM projects p
-        WHERE p.owner_id = auth.uid()
-          OR auth.uid() = ANY(p.member_ids)
-      )
+    project_id IN (
+      SELECT id FROM projects WHERE user_id = auth.uid()
     )
   );
 
@@ -176,10 +148,14 @@ CREATE POLICY "recommendations_update" ON recommendations
 -- =============================================================================
 ALTER TABLE agent_scans ENABLE ROW LEVEL SECURITY;
 
--- SELECT only; scans are written by the backend service role, not by end users
+-- SELECT: authenticated users can see scans for their own projects
 DROP POLICY IF EXISTS "agent_scans_select" ON agent_scans;
 CREATE POLICY "agent_scans_select" ON agent_scans
-  FOR SELECT USING (auth.uid() IS NOT NULL);
+  FOR SELECT USING (
+    project_id IN (
+      SELECT id FROM projects WHERE user_id = auth.uid()
+    )
+  );
 
 -- =============================================================================
 -- AUDIT LOG

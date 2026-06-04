@@ -5,23 +5,26 @@
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS agent_scans (
-  id                   uuid              PRIMARY KEY DEFAULT gen_random_uuid(),
+  id                   uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
 
-  -- what initiated the scan
-  trigger_type         scan_trigger_type NOT NULL DEFAULT 'scheduled',
+  -- which project this scan was run against
+  project_id           uuid        REFERENCES projects(id) ON DELETE CASCADE NOT NULL,
 
-  started_at           timestamptz       DEFAULT now(),
-  completed_at         timestamptz,
+  -- which user triggered the scan (NULL for scheduled/system triggers)
+  triggered_by         uuid        REFERENCES auth.users(id) ON DELETE SET NULL,
 
-  -- e.g. "claude-sonnet-4-6"
-  model_used           text,
+  -- lifecycle state
+  status               text        NOT NULL DEFAULT 'queued'
+                                   CHECK (status IN ('queued', 'running', 'complete', 'failed')),
 
-  -- total tokens consumed across input + output
-  tokens_used          integer           DEFAULT 0,
+  -- token usage and cost
+  prompt_tokens        integer,
+  completion_tokens    integer,
+  total_cost_usd       numeric(10, 6),
 
-  -- how many recommendations were generated in this scan
-  recommendation_count integer           DEFAULT 0,
+  -- summary text from the agent
+  result_summary       text,
 
-  -- populated if the scan failed or produced a partial result
-  error                text
+  created_at           timestamptz DEFAULT now(),
+  completed_at         timestamptz
 );

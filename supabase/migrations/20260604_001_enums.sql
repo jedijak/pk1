@@ -32,39 +32,6 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
--- view_grouping: how cards are organized in a saved view
-DO $$ BEGIN
-  CREATE TYPE view_grouping AS ENUM (
-    'project',
-    'assignee',
-    'code_function',
-    'budget_approval',
-    'risk_deadline',
-    'custom'
-  );
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
-
--- view_visibility: access scope for saved view configurations
-DO $$ BEGIN
-  CREATE TYPE view_visibility AS ENUM ('personal', 'team', 'public');
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
-
--- nested_item_type: types of sub-items embedded in a card's nested_items JSONB
-DO $$ BEGIN
-  CREATE TYPE nested_item_type AS ENUM (
-    'checklist_item',
-    'question',
-    'decision_point',
-    'note'
-  );
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
-
 -- recommendation_status: lifecycle state of an AA agent recommendation
 DO $$ BEGIN
   CREATE TYPE recommendation_status AS ENUM (
@@ -74,13 +41,6 @@ DO $$ BEGIN
     'auto_approved',
     'modified'
   );
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
-
--- scan_trigger_type: what caused an agent scan to run
-DO $$ BEGIN
-  CREATE TYPE scan_trigger_type AS ENUM ('scheduled', 'user_action', 'external');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;

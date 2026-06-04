@@ -16,18 +16,13 @@ END;
 $$;
 
 -- -----------------------------------------------------------------------------
--- projects: top-level organizational unit; owned by one user, shared with many
+-- projects: top-level organizational unit; owned by one user
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS projects (
   id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         uuid        REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   name            text        NOT NULL,
   description     text,
-  -- owner: full control; must exist in auth.users
-  owner_id        uuid        REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  -- member_ids: additional collaborators (array of user UUIDs)
-  member_ids      uuid[]      DEFAULT '{}',
-  -- view_preferences: ordered list of saved view IDs / inline config blobs
-  view_preferences jsonb      DEFAULT '[]',
   created_at      timestamptz DEFAULT now(),
   updated_at      timestamptz DEFAULT now()
 );

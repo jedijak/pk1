@@ -1,38 +1,50 @@
 -- =============================================================================
 -- Migration 007: Recommendations table
--- Each row is one actionable suggestion produced by the AA agent for a card.
+-- Each row is one actionable suggestion produced by the AA agent.
 -- Idempotent: IF NOT EXISTS on table.
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS recommendations (
-  id                 uuid                   PRIMARY KEY DEFAULT gen_random_uuid(),
+  id                        uuid                   PRIMARY KEY DEFAULT gen_random_uuid(),
 
-  -- which scan produced this recommendation
-  scan_id            uuid                   REFERENCES agent_scans(id) ON DELETE CASCADE,
+  -- which project this recommendation belongs to (direct FK for efficient queries)
+  project_id                uuid                   REFERENCES projects(id) ON DELETE CASCADE NOT NULL,
 
-  -- which card the recommendation applies to
-  card_id            uuid                   REFERENCES cards(id) ON DELETE CASCADE,
+  -- which card the recommendation applies to (NULL = project-level recommendation)
+  card_id                   uuid                   REFERENCES cards(id) ON DELETE CASCADE,
 
-  -- e.g. "priority_change", "due_date_warning", "status_update", "blocker_detected"
-  type               text                   NOT NULL,
+  -- which agent scan produced this recommendation
+  created_by_agent_scan_id  uuid                   REFERENCES agent_scans(id) ON DELETE SET NULL,
 
-  -- human-readable description of what the agent suggests doing
-  suggested_action   text                   NOT NULL,
+  -- human-readable title (required)
+  title                     text                   NOT NULL,
 
-  -- agent's explanation for why this recommendation was made
-  reasoning          text,
+  -- optional longer description
+  description               text,
 
-  -- 0.0–1.0 confidence score from the model
-  confidence         float                  CHECK (confidence >= 0 AND confidence <= 1),
+  -- lifecycle state
+  recommendation_status     recommendation_status  NOT NULL DEFAULT 'pending',
 
-  status             recommendation_status  NOT NULL DEFAULT 'pending',
-
-  -- optional downstream actions the agent proposes: [{service, action, payload}]
-  integration_actions jsonb                 DEFAULT '[]',
+  -- arbitrary agent payload (proposed changes, structured data, etc.)
+  payload                   jsonb,
 
   -- when and by whom the recommendation was acted on (NULL = still open)
-  resolved_at        timestamptz,
-  resolved_by        uuid                   REFERENCES auth.users(id) ON DELETE SET NULL,
+  resolved_at               timestamptz,
+  resolved_by               uuid                   REFERENCES auth.users(id) ON DELETE SET NULL,
 
-  created_at         timestamptz            DEFAULT now()
+  created_at                timestamptz            DEFAULT now(),
+  updated_at                timestamptz            DEFAULT now()
 );
+
+-- Trigger: auto-update updated_at
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'trg_recommendations_updated_at'
+      AND tgrelid = 'recommendations'::regclass
+  ) THEN
+    CREATE TRIGGER trg_recommendations_updated_at
+      BEFORE UPDATE ON recommendations
+      FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  END IF;
+END $$;
